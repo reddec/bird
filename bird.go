@@ -37,6 +37,7 @@ func Fly(bird Bird, restartTimeout time.Duration) StopFunc {
 
 // FlyNamed is same as Fly but with custom bird name in log
 func FlyNamed(bird Bird, restartTimeout time.Duration, name string) StopFunc {
+	log.Println("[", name, "] [info] started")
 	gun := FlyWithError(bird, func(err error) {
 		log.Println("[", name, "] [error] (restart after", restartTimeout, ")", err)
 	}, restartTimeout)
@@ -65,6 +66,10 @@ func FlyHandleWithError(bird Handler, errorHanlder ErrorFunc, restartTimeout tim
 // FlyWithError is a function which monitor and restart bird flying untill gun invoked.
 // Returns gun which can interrupt bird flying
 func FlyWithError(bird Bird, errorHanlder ErrorFunc, restartTimeout time.Duration) StopFunc {
+	return fly(bird, errorHanlder, restartTimeout)
+}
+
+func fly(bird Bird, errorHanlder ErrorFunc, restartTimeout time.Duration) StopFunc {
 	kill := make(chan int, 1)
 	wg := sync.WaitGroup{}
 	restart := true
@@ -98,5 +103,53 @@ func FlyWithError(bird Bird, errorHanlder ErrorFunc, restartTimeout time.Duratio
 				wg.Wait()
 			}
 		}
+	}
+}
+
+// A SmartBird is smarter bird then usual: it can starts and stops many times
+type SmartBird struct {
+	name    string
+	restart time.Duration
+	bird    Bird
+	gun     StopFunc
+	access  sync.Mutex
+}
+
+// NewSmartBird constructs new Smart Bird based on usuall bird, but without auto start
+func NewSmartBird(bird Bird, restart time.Duration, name string) *SmartBird {
+	return &SmartBird{name: name, restart: restart, bird: bird}
+}
+
+// Name of bird
+func (g *SmartBird) Name() string { return g.name }
+
+// Interval between restart
+func (g *SmartBird) Interval() time.Duration { return g.restart }
+
+// Flying status
+func (g *SmartBird) Flying() bool { return g.gun != nil }
+
+// Start bird flying. Thread-safe
+func (g *SmartBird) Start() {
+	if g.gun != nil {
+		return
+	}
+	g.access.Lock()
+	defer g.access.Unlock()
+	if g.gun == nil {
+		g.gun = FlyNamed(g.bird, g.restart, g.name)
+	}
+}
+
+// Stop bird flying but without bird's death. Thread-safe
+func (g *SmartBird) Stop() {
+	if g.gun == nil {
+		return
+	}
+	g.access.Lock()
+	defer g.access.Unlock()
+	if g.gun != nil {
+		g.gun()
+		g.gun = nil
 	}
 }

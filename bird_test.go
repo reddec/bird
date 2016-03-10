@@ -61,13 +61,28 @@ func TestFlyHandle(t *testing.T) {
 	t.Log("Orlando has", orlando.counter)
 }
 
+func TestSmartFly(t *testing.T) {
+	sokol := NewSmartBird(noop, 1*time.Second, "Sokol")
+	time.Sleep(2 * time.Second)
+	sokol.Stop()
+
+	sokol.Start()
+	sokol.Stop()
+	sokol.Start()
+	go sokol.Start()
+	sokol.Start()
+	sokol.Stop()
+	go sokol.Stop()
+	sokol.Stop()
+}
+
 func ExampleFly() {
 	log.SetOutput(os.Stderr)
 	gun := FlyNamed(func(kill <-chan int) error {
 		fmt.Println("I'm flying!")
 		return nil
 	}, 1*time.Second, "Canary")
-	time.Sleep(2 * time.Second)
+	time.Sleep(1900 * time.Millisecond)
 	gun()
 	fmt.Println("Bird is killed")
 	//Output: I'm flying!
