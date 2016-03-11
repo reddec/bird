@@ -42,3 +42,16 @@ func Test(){
   smartBird.Start()
 }
 ```
+
+# Flocks
+
+Smart birds can be grouped into flock with common operations: raise, land and others (see doc)
+
+```go
+flock := NewFlock()
+bird := NewSmartBird(noop, 20*time.Second, "Betty")
+flock.Include(bird) // Add bird to flock (dublicates are ignored)
+flock.Raise() // Raise all birds in flock
+// ... Do something
+flock.Dissolve(true) // Land all birds and dissolve flock
+```
