@@ -55,3 +55,13 @@ flock.Raise() // Raise all birds in flock
 // ... Do something
 flock.Dissolve(true) // Land all birds and dissolve flock
 ```
+
+# REST JSON API
+
+Gazer provides JSON API for flock
+
+```go
+gz := NewGazer(bird.NewFlock(), nest)
+http.Handle("/", gz)
+http.ListenAndServe(":9090", nil)
+```
