@@ -62,6 +62,6 @@ Gazer provides JSON API for flock
 
 ```go
 gz := NewGazer(bird.NewFlock(), nest)
-http.Handle("/", gz)
+http.Handle("/birds", gz)
 http.ListenAndServe(":9090", nil)
 ```

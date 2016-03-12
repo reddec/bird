@@ -77,7 +77,7 @@ func createBirds(name string, interval time.Duration, raise bool) (birdFace, err
 func TestGazer(t *testing.T) {
 
 	gz := NewGazer(bird.NewFlock(), nest)
-	http.Handle("/", gz)
+	http.Handle("/birds", gz)
 	go http.ListenAndServe(":9090", nil)
 	time.Sleep(1 * time.Second)
 

@@ -173,21 +173,21 @@ func (gz *gazer) includeBird(w http.ResponseWriter, r *http.Request) {
 
 // NewGazer is a constructor of JSON API.
 // It can create new bird by nest, remove, land/raise and select birds from flock
-// Root: /birds
 // Methods:
 //
-// * GET - select birds (optional param 'name' as filter)
-// * PUT - control bird. Required param 'action' with value 'raise' or 'land'
-// * POST - add new bird by nest.  Required param 'interval' (duration) and 'name'. If required autoraise - use param 'raise' (any non-empty value)
-// * DELETE - land and kill bird
+// GET - select birds (optional param 'name' as filter)
+//
+// PUT - control bird. Required param 'action' with value 'raise' or 'land'
+//
+// POST - add new bird by nest.  Required param 'interval' (duration) and 'name'. If required autoraise - use param 'raise' (any non-empty value)
+//
+// DELETE - land and kill bird
 func NewGazer(flock *bird.Flock, nest Nest) http.Handler {
 	router := mux.NewRouter().StrictSlash(true)
 	gz := &gazer{flock, nest}
-	router.Path("/birds").Methods("GET").HandlerFunc(gz.listAllBirds)
-	router.Path("/birds").Methods("PUT").HandlerFunc(gz.controlBirds)
-
-	router.Path("/birds").Methods("POST").HandlerFunc(gz.includeBird)
-	router.Path("/birds").Methods("DELETE").HandlerFunc(gz.killBirds)
-
+	router.Methods("GET").HandlerFunc(gz.listAllBirds)
+	router.Methods("PUT").HandlerFunc(gz.controlBirds)
+	router.Methods("POST").HandlerFunc(gz.includeBird)
+	router.Methods("DELETE").HandlerFunc(gz.killBirds)
 	return router
 }
