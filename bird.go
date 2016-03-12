@@ -8,16 +8,19 @@ import (
 	"time"
 )
 
+// Gun is a channel with stop signal. Any value from this channel indicates that bird must die
+type Gun <-chan int
+
 //Handler - handle processing by implementing interface
 type Handler interface {
-	Run(stop <-chan int) error // Stop - is signal to force stop
+	Run(stop Gun) error // Stop - is signal to force stop
 }
 
 // Bird is a function which must run forver untill stop signal occrued.
 // If bird stops whenever with or without error it will be restarted after
 // specified timeout.
 // External systems may request force stop by sending any value to stop channel
-type Bird func(stop <-chan int) error
+type Bird func(stop Gun) error
 
 // The ErrorFunc function hould process error produced by Bird function
 type ErrorFunc func(err error)

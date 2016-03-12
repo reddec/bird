@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func noop(kill <-chan int) error {
+func noop(kill Gun) error {
 	select {
 	case <-kill:
 		break
@@ -19,7 +19,7 @@ func noop(kill <-chan int) error {
 	return nil
 }
 
-func noopErr(kill <-chan int) error {
+func noopErr(kill Gun) error {
 	select {
 	case <-kill:
 		break
@@ -45,7 +45,7 @@ type eagle struct {
 	counter int
 }
 
-func (ea *eagle) Run(kill <-chan int) error {
+func (ea *eagle) Run(kill Gun) error {
 	ea.counter++
 	return nil
 }
@@ -78,7 +78,7 @@ func TestSmartFly(t *testing.T) {
 
 func ExampleFly() {
 	log.SetOutput(os.Stderr)
-	gun := FlyNamed(func(kill <-chan int) error {
+	gun := FlyNamed(func(kill Gun) error {
 		fmt.Println("I'm flying!")
 		return nil
 	}, 1*time.Second, "Canary")

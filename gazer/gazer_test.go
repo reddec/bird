@@ -15,7 +15,7 @@ import (
 )
 
 func nest(params url.Values) (bird.Bird, error) {
-	return func(kill <-chan int) error {
+	return func(kill bird.Gun) error {
 	LOOP:
 		for {
 			select {

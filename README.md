@@ -25,7 +25,7 @@ Smart bird can be started and stopped multiple times. Start and stop are thread-
 
 
 ```go
-func SomethingThatCanFail(kill <-chan int) error {
+func SomethingThatCanFail(kill bird.Gun) error {
   var err error
   // do something ...
   return err
