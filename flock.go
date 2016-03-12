@@ -43,32 +43,29 @@ func (f *Flock) Take(birdToExclude *SmartBird, landBird bool) *SmartBird {
 	return nil
 }
 
-// Exclude smart birds from a flock by their names and then returns them as list
-func (f *Flock) Exclude(birdName string, landBird bool) []*SmartBird {
+// Exclude some smart birds from a flock by their names and then returns them as list
+func (f *Flock) Exclude(landBird bool, birdNames ...string) []*SmartBird {
 	var ans []*SmartBird
 	f.access.Lock()
 	defer f.access.Unlock()
-	for bird := range f.birds {
-		if bird.Name() == birdName {
-			if landBird {
-				bird.Stop()
-			}
-			ans = append(ans, bird)
+	selected := f.selectUnsafe(birdNames...)
+	for _, bird := range selected {
+		if landBird {
+			bird.Stop()
 		}
-	}
-	for _, bird := range ans {
 		delete(f.birds, bird)
 	}
 	return ans
 }
 
-// Land all smart birds in a flock
-func (f *Flock) Land() {
+// Land some smart birds in a flock by their names.
+// If names not specified - all birds are used
+func (f *Flock) Land(names ...string) {
 	f.access.RLock()
 	defer f.access.RUnlock()
 	wg := sync.WaitGroup{}
 	wg.Add(len(f.birds))
-	for bird := range f.birds {
+	for _, bird := range f.selectUnsafe(names...) {
 		go func(bird *SmartBird) {
 			defer wg.Done()
 			bird.Stop()
@@ -78,23 +75,21 @@ func (f *Flock) Land() {
 }
 
 // Raise all smart birds in a flock in the ai
-func (f *Flock) Raise() {
+// If names not specified - all birds are used
+func (f *Flock) Raise(names ...string) {
 	f.access.RLock()
 	defer f.access.RUnlock()
-	for bird := range f.birds {
+	for _, bird := range f.selectUnsafe(names...) {
 		bird.Start()
 	}
 }
 
-// Census all smart birds in a flock
-func (f *Flock) Census() []*SmartBird {
+// Select some smart birds from a flock by their names
+// If names not specified - all birds are used
+func (f *Flock) Select(names ...string) []*SmartBird {
 	f.access.RLock()
 	defer f.access.RUnlock()
-	ans := make([]*SmartBird, 0, len(f.birds))
-	for bird := range f.birds {
-		ans = append(ans, bird)
-	}
-	return ans
+	return f.selectUnsafe(names...)
 }
 
 // Dissolve all smart birds from a flock and optionally land them
@@ -107,4 +102,33 @@ func (f *Flock) Dissolve(land bool) {
 		}
 	}
 	f.birds = make(map[*SmartBird]bool)
+}
+
+func (f *Flock) selectUnsafe(names ...string) []*SmartBird {
+	ans := make([]*SmartBird, 0, len(f.birds))
+	switch { // Some nano-optimization
+	case len(names) > 1:
+		set := make(map[string]bool)
+		for _, name := range names {
+			set[name] = true
+		}
+		for bird := range f.birds {
+			if set[bird.name] {
+				ans = append(ans, bird)
+			}
+		}
+	case len(names) == 1:
+		for bird := range f.birds {
+			if names[1] == bird.name {
+				ans = append(ans, bird)
+			}
+		}
+	default:
+		for bird := range f.birds {
+			ans = append(ans, bird)
+		}
+
+	}
+
+	return ans
 }

@@ -10,18 +10,18 @@ func TestFlock(t *testing.T) {
 	defer flock.Dissolve(true)
 	bird := NewSmartBird(noop, 20*time.Second, "Betty")
 	flock.Include(bird)
-	match := flock.Census()[0]
+	match := flock.Select()[0]
 	if match != bird {
 		t.Fatal("Included bird not matched")
 	}
 	flock.Land()
-	for _, bird := range flock.Census() {
+	for _, bird := range flock.Select() {
 		if bird.Flying() {
 			t.Fatal("All birds must be landed")
 		}
 	}
 	flock.Raise()
-	for _, bird := range flock.Census() {
+	for _, bird := range flock.Select() {
 		if !bird.Flying() {
 			t.Fatal("All birds must be raised")
 		}
@@ -30,7 +30,7 @@ func TestFlock(t *testing.T) {
 	if bird.Flying() {
 		t.Fatal("Bird must be landed if flag specified in Dissolve")
 	}
-	if len(flock.Census()) != 0 {
+	if len(flock.Select()) != 0 {
 		t.Fatal("Flock must be empty after dissolve")
 	}
 	flock.Include(bird)
@@ -39,7 +39,7 @@ func TestFlock(t *testing.T) {
 	if !bird.Flying() {
 		t.Fatal("Bird must be in air if flag NOT specified in Dissolve")
 	}
-	if len(flock.Census()) != 0 {
+	if len(flock.Select()) != 0 {
 		t.Fatal("Flock must be empty after dissolve")
 	}
 	//TODO: Add tests for other functions
