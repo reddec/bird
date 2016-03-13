@@ -14,19 +14,25 @@ import (
 	"github.com/reddec/bird"
 )
 
-func nest(params url.Values) (bird.Bird, error) {
-	return func(kill bird.Gun) error {
-	LOOP:
-		for {
-			select {
-			case <-kill:
-				break LOOP
-			case <-time.After(1 * time.Second):
-				log.Println("Hello from " + params.Get("name"))
-			}
+type worker struct {
+	name string
+}
+
+func (wrk worker) Run(kill bird.Gun) error {
+LOOP:
+	for {
+		select {
+		case <-kill:
+			break LOOP
+		case <-time.After(1 * time.Second):
+			log.Println("Hello from " + wrk.name)
 		}
-		return nil
-	}, nil
+	}
+	return nil
+}
+
+func nest(params url.Values) (bird.Bird, error) {
+	return worker{params.Get("name")}, nil
 }
 
 func getBirds() ([]birdFace, error) {

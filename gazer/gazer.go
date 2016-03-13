@@ -145,6 +145,8 @@ func (gz *gazer) includeBird(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "'interval' param parsing: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+	r.Form.Del("name")
+	r.Form.Del("interval")
 	birdFunc, err := gz.nest(r.Form)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

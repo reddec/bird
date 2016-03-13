@@ -8,7 +8,7 @@ import (
 func TestFlock(t *testing.T) {
 	flock := NewFlock()
 	defer flock.Dissolve(true)
-	bird := NewSmartBird(noop, 20*time.Second, "Betty")
+	bird := NewSmartBird(&testBird{}, 20*time.Second, "Betty")
 	flock.Include(bird)
 	match := flock.Select()[0]
 	if match != bird {
@@ -67,7 +67,7 @@ func TestFlockJournal(t *testing.T) {
 		}
 	}()
 
-	bird := NewSmartBird(noop, 20*time.Second, "Betty")
+	bird := NewSmartBird(&testBird{}, 20*time.Second, "Betty")
 	flock.Include(bird)
 	time.Sleep(100 * time.Millisecond) // Allow go-routing do work
 	if !(!removed && added && !landed && !raised) {

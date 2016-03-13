@@ -11,16 +11,13 @@ import (
 // Gun is a channel with stop signal. Any value from this channel indicates that bird must die
 type Gun <-chan int
 
-//Handler - handle processing by implementing interface
-type Handler interface {
-	Run(stop Gun) error // Stop - is signal to force stop
-}
-
-// Bird is a function which must run forver untill stop signal occrued.
+// Bird is an interface of object which must run forver untill stop signal occrued.
 // If bird stops whenever with or without error it will be restarted after
 // specified timeout.
 // External systems may request force stop by sending any value to stop channel
-type Bird func(stop Gun) error
+type Bird interface {
+	Run(stop Gun) error // Stop - is signal to force stop
+}
 
 // The ErrorFunc function hould process error produced by Bird function
 type ErrorFunc func(err error)
@@ -51,21 +48,6 @@ func FlyNamed(bird Bird, restartTimeout time.Duration, name string) StopFunc {
 	}
 }
 
-// FlyHandle is simple wrapper for Fly which allows use interfaces as bird
-func FlyHandle(bird Handler, restartTimeout time.Duration) StopFunc {
-	return Fly(bird.Run, restartTimeout)
-}
-
-// FlyHandleNamed  is same as FlyHandle but with custom bird name in log
-func FlyHandleNamed(bird Handler, restartTimeout time.Duration, name string) StopFunc {
-	return FlyNamed(bird.Run, restartTimeout, name)
-}
-
-// FlyHandleWithError is simple wrapper for FlyWithError which allows use interfaces as bird
-func FlyHandleWithError(bird Handler, errorHanlder ErrorFunc, restartTimeout time.Duration) StopFunc {
-	return FlyWithError(bird.Run, errorHanlder, restartTimeout)
-}
-
 // FlyWithError is a function which monitor and restart bird flying untill gun invoked.
 // Returns gun which can interrupt bird flying
 func FlyWithError(bird Bird, errorHanlder ErrorFunc, restartTimeout time.Duration) StopFunc {
@@ -82,7 +64,7 @@ func fly(bird Bird, errorHanlder ErrorFunc, restartTimeout time.Duration) StopFu
 		defer wg.Done()
 	LOOP:
 		for restart {
-			err := bird(kill) // Bird can be killed by signal
+			err := bird.Run(kill) // Bird can be killed by signal
 			if err != nil && errorHanlder != nil {
 				errorHanlder(err)
 			}
