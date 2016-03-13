@@ -28,6 +28,9 @@ func (op Operation) String() string {
 	}
 }
 
+// Journal channel of actions in flock
+type Journal <-chan Action
+
 // Action details of single manipulation with birds group
 type Action struct {
 	Birds     []*SmartBird
@@ -49,7 +52,7 @@ func NewFlock() *Flock {
 
 // Journal of all manipulations with birds in the flock. If journal was invoked,
 // reader must read it all otherwise all block
-func (f *Flock) Journal() <-chan Action {
+func (f *Flock) Journal() Journal {
 	f.journalEnabled = true
 	return f.journal
 }
