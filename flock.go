@@ -47,7 +47,7 @@ func NewFlock() *Flock {
 	return &Flock{birds: make(map[*SmartBird]bool), journal: make(chan Action)}
 }
 
-// Journal if all manipulations with birds in the flock. If journal was invoked,
+// Journal of all manipulations with birds in the flock. If journal was invoked,
 // reader must read it all otherwise all block
 func (f *Flock) Journal() <-chan Action {
 	f.journalEnabled = true
