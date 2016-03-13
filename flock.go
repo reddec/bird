@@ -2,15 +2,56 @@ package bird
 
 import "sync"
 
+// Operation type of manipulation
+type Operation int
+
+// Possible operation types
+const (
+	Land Operation = iota
+	Raise
+	Include
+	Exclude
+)
+
+func (op Operation) String() string {
+	switch op {
+	case Land:
+		return "Land"
+	case Raise:
+		return "Raise"
+	case Include:
+		return "Include"
+	case Exclude:
+		return "Exclude"
+	default:
+		return "Unknown"
+	}
+}
+
+// Action details of single manipulation with birds group
+type Action struct {
+	Birds     []*SmartBird
+	Operation Operation
+}
+
 // Flock is a collection of smart birds
 type Flock struct {
-	birds  map[*SmartBird]bool
-	access sync.RWMutex
+	birds          map[*SmartBird]bool
+	access         sync.RWMutex
+	journalEnabled bool
+	journal        chan Action
 }
 
 // NewFlock initializes new flock of smart birds
 func NewFlock() *Flock {
-	return &Flock{birds: make(map[*SmartBird]bool)}
+	return &Flock{birds: make(map[*SmartBird]bool), journal: make(chan Action)}
+}
+
+// Journal if all manipulations with birds in the flock. If journal was invoked,
+// reader must read it all otherwise all block
+func (f *Flock) Journal() <-chan Action {
+	f.journalEnabled = true
+	return f.journal
 }
 
 // Include new smart bird to a flock or do nothing if it is already in
@@ -22,6 +63,7 @@ func (f *Flock) Include(smartBird *SmartBird) {
 	defer f.access.Unlock()
 	if !f.birds[smartBird] {
 		f.birds[smartBird] = true
+		f.log(Include, smartBird)
 	}
 }
 
@@ -34,10 +76,12 @@ func (f *Flock) Take(birdToExclude *SmartBird, landBird bool) *SmartBird {
 	f.access.Lock()
 	defer f.access.Unlock()
 	if f.birds[birdToExclude] {
-		delete(f.birds, birdToExclude)
 		if landBird {
 			birdToExclude.Stop()
+			f.log(Land, birdToExclude)
 		}
+		delete(f.birds, birdToExclude)
+		f.log(Exclude, birdToExclude)
 		return birdToExclude
 	}
 	return nil
@@ -55,6 +99,10 @@ func (f *Flock) Exclude(landBird bool, birdNames ...string) []*SmartBird {
 		}
 		delete(f.birds, bird)
 	}
+	if landBird {
+		f.log(Land, selected...)
+	}
+	f.log(Exclude, selected...)
 	return ans
 }
 
@@ -64,24 +112,28 @@ func (f *Flock) Land(names ...string) {
 	f.access.RLock()
 	defer f.access.RUnlock()
 	wg := sync.WaitGroup{}
-	wg.Add(len(f.birds))
-	for _, bird := range f.selectUnsafe(names...) {
+	selected := f.selectUnsafe(names...)
+	wg.Add(len(selected))
+	for _, bird := range selected {
 		go func(bird *SmartBird) {
 			defer wg.Done()
 			bird.Stop()
 		}(bird) // run stop in separate routing because of Stop() may be slow operation
 	}
 	wg.Wait()
+	f.log(Land, selected...)
 }
 
-// Raise all smart birds in a flock in the ai
+// Raise all smart birds in a flock.
 // If names not specified - all birds are used
 func (f *Flock) Raise(names ...string) {
 	f.access.RLock()
 	defer f.access.RUnlock()
-	for _, bird := range f.selectUnsafe(names...) {
+	selected := f.selectUnsafe(names...)
+	for _, bird := range selected {
 		bird.Start()
 	}
+	f.log(Raise, selected...)
 }
 
 // Select some smart birds from a flock by their names
@@ -94,14 +146,13 @@ func (f *Flock) Select(names ...string) []*SmartBird {
 
 // Dissolve all smart birds from a flock and optionally land them
 func (f *Flock) Dissolve(land bool) {
-	f.access.Lock()
-	defer f.access.Unlock()
-	if land {
-		for bird := range f.birds {
-			bird.Stop()
-		}
+	f.Exclude(land)
+}
+
+func (f *Flock) log(operation Operation, birds ...*SmartBird) {
+	if f.journalEnabled && len(birds) > 0 {
+		f.journal <- Action{birds, operation}
 	}
-	f.birds = make(map[*SmartBird]bool)
 }
 
 func (f *Flock) selectUnsafe(names ...string) []*SmartBird {
@@ -119,7 +170,7 @@ func (f *Flock) selectUnsafe(names ...string) []*SmartBird {
 		}
 	case len(names) == 1:
 		for bird := range f.birds {
-			if names[1] == bird.name {
+			if names[0] == bird.name {
 				ans = append(ans, bird)
 			}
 		}

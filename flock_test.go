@@ -44,3 +44,54 @@ func TestFlock(t *testing.T) {
 	}
 	//TODO: Add tests for other functions
 }
+
+func TestFlockJournal(t *testing.T) {
+	flock := NewFlock()
+	defer flock.Dissolve(true)
+
+	var removed, added, landed, raised bool
+	journal := flock.Journal()
+	go func() {
+		for action := range journal {
+			t.Log(action)
+			switch action.Operation {
+			case Land:
+				landed = true
+			case Exclude:
+				removed = true
+			case Raise:
+				raised = true
+			case Include:
+				added = true
+			}
+		}
+	}()
+
+	bird := NewSmartBird(noop, 20*time.Second, "Betty")
+	flock.Include(bird)
+	time.Sleep(100 * time.Millisecond) // Allow go-routing do work
+	if !(!removed && added && !landed && !raised) {
+		t.Fatal("Include action not invoked")
+	}
+	added = false
+
+	flock.Raise(bird.Name())
+	time.Sleep(100 * time.Millisecond)
+	if !(!removed && !added && !landed && raised) {
+		t.Fatal("Raise action not invoked")
+	}
+	raised = false
+
+	flock.Land(bird.Name())
+	time.Sleep(100 * time.Millisecond)
+	if !(!removed && !added && landed && !raised) {
+		t.Fatal("Land action not invoked")
+	}
+	landed = false
+
+	flock.Dissolve(false)
+	time.Sleep(100 * time.Millisecond)
+	if !(removed && !added && !landed && !raised) {
+		t.Fatal("Exclude action not invoked")
+	}
+}
