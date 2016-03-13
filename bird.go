@@ -114,6 +114,9 @@ func (g *SmartBird) Interval() time.Duration { return g.restart }
 // Flying status
 func (g *SmartBird) Flying() bool { return g.gun != nil }
 
+// Body of bird - instance of bird
+func (g *SmartBird) Body() Bird { return g.bird }
+
 // Start bird flying. Thread-safe
 func (g *SmartBird) Start() {
 	if g.gun != nil {
